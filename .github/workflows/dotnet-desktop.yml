@@ -1,0 +1,34 @@
+name: Build FastGPU-P Releases
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        build_config: [Release]
+        platform: [x86, x64]
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Publish
+      run: dotnet publish FastGPU-P.sln /p:PublishProfile=${{ matrix.platform }}-${{ matrix.build_config }}.pubxml
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: FastGPU-P-${{ matrix.build_config }}-${{ matrix.platform }}
+        path: ./FastGPU-P/bin/publish/${{ matrix.platform }}-${{ matrix.build_config }}
