@@ -2,26 +2,38 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows</TargetFramework>
     <RootNamespace>FastGPU_P</RootNamespace>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>AnyCPU;x64</Platforms>
+    <Platforms>x86;x64</Platforms>
 	<AssemblyTitle>FastGPUP</AssemblyTitle>
 	<Description>A WIP GUI app to make GPU-P way easier!</Description>
-	<Company>Josue Alonso Rodriguez</Company>
+    <Company>Josue Alonso Rodriguez</Company>
 	<Product>FastGPU-P</Product>
 	<Authors>b1on1cdog</Authors>
 	<Version>0.3.2</Version>
 	<Copyright>@2025 b1on1cdog</Copyright>
-	<ApplicationIcon>FastGPU-P.ico</ApplicationIcon>
+	<ApplicationIcon>Resources\FastGPU-P.ico</ApplicationIcon>
+	<Optimize>True</Optimize>
+	<DebugType>none</DebugType>
+	<PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <Optimize>False</Optimize>
+    <DebugType>full</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MetroModernUI" Version="1.4.0" />
-    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.2.1" />
-    <PackageReference Include="System.Management.Automation" Version="7.2.1" />
+    <Content Include="Resources\FastGPU-P.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.5.4" />
+    <PackageReference Include="ModernUI" Version="2.0.0" />
+    <PackageReference Include="System.Management.Automation" Version="7.5.4" />
   </ItemGroup>
 </Project>

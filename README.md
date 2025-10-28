@@ -6,7 +6,7 @@ The usage is simple, choose VM, choose GPU, slide the percentage you want to all
 Drivers should be installed automatically when adding a GPU partition, if you update host drivers you must press "Update driver" for GPU to work in guest.</br>
 </br>
 Windows 10 does not allow GPU selection, this is an Hyper-V limitation.</br>
-This tool requires .NET Framework 6.0.</br>
+This tool requires .NET Framework 9.0.</br>
 
 # To-do
 -Detect mismatched guest GPU drivers</br>
