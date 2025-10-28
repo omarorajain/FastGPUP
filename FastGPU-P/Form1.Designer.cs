@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             gpuBox = new ComboBox();
             gpuLabel = new Label();
             vmBox = new ComboBox();
@@ -183,7 +184,7 @@
             Name = "Form1";
             Padding = new Padding(20, 100, 20, 34);
             Text = "Fast GPU-P";
-            this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             ResumeLayout(false);
             PerformLayout();
         }
