@@ -13,6 +13,8 @@ Windows 10 does not allow GPU selection, this is an Hyper-V limitation.
 This tool requires .NET Framework 9.0.
 Make sure Bitlocker is disabled or suspended or the mount will not work. 
 
+![Image of Main Screen](Images/mainScreen.png)
+
 ## To-do
 - Detect mismatched guest GPU drivers
 - Bulk GPU driver install
