@@ -4,22 +4,32 @@ param(
 	[decimal]$GPUResourceAllocationPercentage
 )
 
+$ErrorActionPreference = 'SilentlyContinue'
+Remove-VMGpuPartitionAdapter -VMName $VMName
+
 $ErrorActionPreference = 'Stop'
 
 # If InstancePath is empty, don't use the flag. Otherwise, use it.
 if ([string]::IsNullOrWhiteSpace($InstancePath)) {
-	Add-VMGpuPartitionAdapter -VMName $VMName
+	$HostGpu = Get-VMHostPartitionableGpu | Select-Object -First 1
+    Add-VMGpuPartitionAdapter -VMName $VMName
 }
 else {
-	Add-VMGpuPartitionAdapter -VMName $VMName -InstancePath $InstancePath
+	$HostGpu = Get-VMHostPartitionableGpu | Where-Object Name -eq $InstancePath
+    Add-VMGpuPartitionAdapter -VMName $VMName -InstancePath $InstancePath
 }
 
-[float]$divider = [math]::Round($(100 / $GPUResourceAllocationPercentage), 2)
+[double]$Multiplier = $GPUResourceAllocationPercentage / 100.0
 
-Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionVRAM ([math]::round($(1000000000 / $divider))) -MaxPartitionVRAM ([math]::round($(1000000000 / $divider))) -OptimalPartitionVRAM ([math]::round($(1000000000 / $divider)))
-Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionEncode ([math]::round($(18446744073709551615 / $divider))) -MaxPartitionEncode ([math]::round($(18446744073709551615 / $divider))) -OptimalPartitionEncode ([math]::round($(18446744073709551615 / $divider)))
-Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionDecode ([math]::round($(1000000000 / $divider))) -MaxPartitionDecode ([math]::round($(1000000000 / $divider))) -OptimalPartitionDecode ([math]::round($(1000000000 / $divider)))
-Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionCompute ([math]::round($(1000000000 / $divider))) -MaxPartitionCompute ([math]::round($(1000000000 / $divider))) -OptimalPartitionCompute ([math]::round($(1000000000 / $divider)))
+[uint64]$vram    = [math]::Round($HostGpu.TotalVRAM * $Multiplier)
+[uint64]$encode  = [math]::Round($HostGpu.TotalEncode * $Multiplier)
+[uint64]$decode  = [math]::Round($HostGpu.TotalDecode * $Multiplier)
+[uint64]$compute = [math]::Round($HostGpu.TotalCompute * $Multiplier)
+
+Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionVRAM $vram -MaxPartitionVRAM $vram -OptimalPartitionVRAM $vram
+Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionEncode $encode -MaxPartitionEncode $encode -OptimalPartitionEncode $encode
+Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionDecode $decode -MaxPartitionDecode $decode -OptimalPartitionDecode $decode
+Set-VMGpuPartitionAdapter -VMName $VMName -MinPartitionCompute $compute -MaxPartitionCompute $compute -OptimalPartitionCompute $compute
 
 Set-VM -GuestControlledCacheTypes $true -VMName $VMName
 Set-VM -LowMemoryMappedIoSpace 1Gb -VMName $VMName
