@@ -2,6 +2,8 @@ param(
 	[string]$VMName
 )
 
+$ErrorActionPreference = 'Stop'
+
 $VM = Get-VM -Name $VMName
 if ($VM.State -eq "Running") {
 	Stop-VM -Name $VMName -Force

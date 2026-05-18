@@ -4,8 +4,7 @@ param(
     [string]$Hostname
 )
 
-Set-ExecutionPolicy -ExecutionPolicy Unrestricted
-Import-Module Storage
+$ErrorActionPreference = 'Stop'
 
 Function Add-VMGpuPartitionAdapterFiles {
     param(

@@ -1,9 +1,7 @@
 using MetroFramework.Forms;
 using Microsoft.Win32;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Management;
-using System.Management.Automation;
 using System.Reflection;
 
 namespace FastGPU_P
@@ -16,7 +14,7 @@ namespace FastGPU_P
         {
             var os = Environment.OSVersion;
             _isWin10 = os.Version.Major == 10 && os.Version.Build < 22000;
-
+            
             InitializeComponent();
             Resizable = false;
             MaximizeBox = false;
@@ -24,7 +22,7 @@ namespace FastGPU_P
         }
 
         // OS & Hardware
-
+        
         private static string GetWindowsEdition()
         {
             using ManagementObjectSearcher searcher = new("SELECT Caption FROM Win32_OperatingSystem");
@@ -45,13 +43,13 @@ namespace FastGPU_P
             int buildNumber = Environment.OSVersion.Version.Build;
             string edition = GetWindowsEdition();
             Debug.WriteLine($"Running {edition}");
-
+            
             if (buildNumber >= 19041 && !edition.Contains("Server"))
                 return true;
-
+                
             if (buildNumber >= 20348 && edition.Contains("Server"))
                 return true;
-
+                
             return false;
         }
 
@@ -66,13 +64,13 @@ namespace FastGPU_P
             {
                 string subKeyPath = $@"{baseRegistryKeyPath}\{subKeyName}";
                 string? foundName = GetValueFromRegistry(subKeyPath, "DriverDesc");
-
+                
                 if (foundName == gpuName)
                 {
                     return GetValueFromRegistry(subKeyPath, "HardwareInformation.qwMemorySize");
                 }
             }
-
+            
             return null;
         }
 
@@ -104,7 +102,7 @@ namespace FastGPU_P
                     return installState == 1;
                 }
             }
-            return false;
+            return false; 
         }
 
         private static void ApplyPreventiveFixes()
@@ -126,30 +124,50 @@ namespace FastGPU_P
         }
 
         // PowerShell
-
-        private static Collection<PSObject> ExecutePowerShell(string scriptContent, Dictionary<string, object>? parameters = null)
+        
+        private static List<string> ExecutePowerShell(string scriptContent, Dictionary<string, object>? parameters = null)
         {
-            using var ps = PowerShell.Create();
-            ps.AddScript(scriptContent);
+            string tempScript = Path.GetTempFileName() + ".ps1";
+            
+            File.WriteAllText(tempScript, scriptContent);
 
+            string args = $"-ExecutionPolicy Bypass -NoProfile -File \"{tempScript}\"";
             if (parameters != null)
             {
-                ps.AddParameters(parameters);
+                foreach (var param in parameters)
+                {
+                    args += $" -{param.Key} \"{param.Value}\"";
+                }
             }
 
-            var results = ps.Invoke();
-
-            if (ps.HadErrors)
+            var processInfo = new ProcessStartInfo
             {
-                string errors = string.Join(Environment.NewLine, ps.Streams.Error.Select(e => e.ToString()));
-                Debug.WriteLine($"PowerShell Error:\n{errors}");
-                throw new InvalidOperationException(errors);
+                FileName = "powershell.exe",
+                Arguments = args,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+			using var process = Process.Start(processInfo) ?? throw new Exception("Failed to start PowerShell");
+			string output = process.StandardOutput.ReadToEnd();
+            string errors = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            try { File.Delete(tempScript); } catch { /* Ignore cleanup errors */ }
+
+            if (process.ExitCode != 0)
+            {
+                string errorMessage = string.IsNullOrWhiteSpace(errors) ? "An unknown PowerShell error occurred." : errors;
+                Debug.WriteLine($"PowerShell Error:\n{errorMessage}");
+                throw new InvalidOperationException(errorMessage);
             }
 
-            return results;
+            return [.. output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).Select(line => line.Trim())];
         }
 
-        private static Collection<PSObject> RunEmbeddedScript(string scriptName, Dictionary<string, object>? parameters = null)
+        private static List<string> RunEmbeddedScript(string scriptName, Dictionary<string, object>? parameters = null)
         {
             string resourcePath = $"FastGPU_P.Scripts.{scriptName}";
 
@@ -202,8 +220,7 @@ namespace FastGPU_P
                     }
                 }
 
-                var vmObjects = ExecutePowerShell("Get-VM | Where-Object Generation -GT 1 | Select-Object -ExpandProperty Name");
-                List<string> detectedVms = vmObjects.Select(x => x.ToString()).ToList();
+                List<string> detectedVms = ExecutePowerShell("Get-VM | Where-Object Generation -GT 1 | Select-Object -ExpandProperty Name");
 
                 bool isCompatible = IsWindowsCompatible();
                 bool isHyperVEnabled = IsFeatureEnabled("Microsoft-Hyper-V-All");
@@ -367,7 +384,7 @@ namespace FastGPU_P
         private async void AddButton_Click(object sender, EventArgs e)
         {
             ToggleActionButtons(false);
-
+            
             string targetVm = vmBox.Text;
             string targetGpu = gpuBox.Text;
             int gpuCount = gpuBox.Items.Count;
@@ -396,7 +413,7 @@ namespace FastGPU_P
                         { "InstancePath", instancePath },
                         { "GPUResourceAllocationPercentage", allocationValue }
                     };
-
+                    
                     RunEmbeddedScript("AllocateGPU.ps1", scriptParams);
                     InstallDriverCore(targetVm, targetGpu, hostName);
 
@@ -421,7 +438,7 @@ namespace FastGPU_P
         private async void InstallDriverBtn_Click(object sender, EventArgs e)
         {
             ToggleActionButtons(false);
-
+            
             string targetVm = vmBox.Text;
             string targetGpu = gpuBox.Text;
             string hostName = Environment.MachineName;
@@ -458,7 +475,7 @@ namespace FastGPU_P
                     bool wasRunning = stateCheck.FirstOrDefault()?.ToString() == "Running";
 
                     ShutdownVm(targetVm);
-
+                    
                     var scriptParams = new Dictionary<string, object>
                     {
                         { "VMName", targetVm }

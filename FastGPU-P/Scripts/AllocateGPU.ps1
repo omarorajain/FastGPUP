@@ -4,6 +4,8 @@ param(
 	[decimal]$GPUResourceAllocationPercentage
 )
 
+$ErrorActionPreference = 'Stop'
+
 # If InstancePath is empty, don't use the flag. Otherwise, use it.
 if ([string]::IsNullOrWhiteSpace($InstancePath)) {
 	Add-VMGpuPartitionAdapter -VMName $VMName
