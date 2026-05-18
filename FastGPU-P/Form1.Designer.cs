@@ -34,11 +34,11 @@
             vmBox = new ComboBox();
             vmLabel = new Label();
             addButton = new Button();
-            AllocationLabel = new Label();
+            allocationLabel = new Label();
             allocationBar = new MetroFramework.Controls.MetroTrackBar();
             allocPercent = new Label();
             installDriverBtn = new Button();
-            RemoveButton = new Button();
+            removeButton = new Button();
             creditLabel = new Label();
             SuspendLayout();
             // 
@@ -91,14 +91,14 @@
             addButton.UseVisualStyleBackColor = true;
             addButton.Click += AddButton_Click;
             // 
-            // AllocationLabel
+            // allocationLabel
             // 
-            AllocationLabel.AutoSize = true;
-            AllocationLabel.Location = new Point(23, 233);
-            AllocationLabel.Name = "AllocationLabel";
-            AllocationLabel.Size = new Size(156, 20);
-            AllocationLabel.TabIndex = 6;
-            AllocationLabel.Text = "Allocation percentage";
+            allocationLabel.AutoSize = true;
+            allocationLabel.Location = new Point(23, 233);
+            allocationLabel.Name = "allocationLabel";
+            allocationLabel.Size = new Size(156, 20);
+            allocationLabel.TabIndex = 6;
+            allocationLabel.Text = "Allocation percentage";
             // 
             // allocationBar
             // 
@@ -119,7 +119,7 @@
             allocationBar.Text = "null";
             allocationBar.Theme = MetroFramework.MetroThemeStyle.Light;
             allocationBar.Value = 50;
-            allocationBar.Scroll += AllocationBar_Scroll;
+            allocationBar.ValueChanged += AllocationBar_ValueChanged;
             // 
             // allocPercent
             // 
@@ -141,16 +141,16 @@
             installDriverBtn.UseVisualStyleBackColor = true;
             installDriverBtn.Click += InstallDriverBtn_Click;
             // 
-            // RemoveButton
+            // removeButton
             // 
-            RemoveButton.Location = new Point(175, 318);
-            RemoveButton.Margin = new Padding(3, 6, 3, 6);
-            RemoveButton.Name = "RemoveButton";
-            RemoveButton.Size = new Size(159, 48);
-            RemoveButton.TabIndex = 10;
-            RemoveButton.Text = "Remove";
-            RemoveButton.UseVisualStyleBackColor = true;
-            RemoveButton.Click += RemoveButton_Click;
+            removeButton.Location = new Point(175, 318);
+            removeButton.Margin = new Padding(3, 6, 3, 6);
+            removeButton.Name = "removeButton";
+            removeButton.Size = new Size(159, 48);
+            removeButton.TabIndex = 10;
+            removeButton.Text = "Remove";
+            removeButton.UseVisualStyleBackColor = true;
+            removeButton.Click += RemoveButton_Click;
             // 
             // creditLabel
             // 
@@ -167,11 +167,11 @@
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(360, 490);
             Controls.Add(creditLabel);
-            Controls.Add(RemoveButton);
+            Controls.Add(removeButton);
             Controls.Add(installDriverBtn);
             Controls.Add(allocPercent);
             Controls.Add(allocationBar);
-            Controls.Add(AllocationLabel);
+            Controls.Add(allocationLabel);
             Controls.Add(addButton);
             Controls.Add(vmLabel);
             Controls.Add(vmBox);
@@ -196,11 +196,11 @@
         private ComboBox vmBox;
         private Label vmLabel;
         private Button addButton;
-        private Label AllocationLabel;
+        private Label allocationLabel;
         private MetroFramework.Controls.MetroTrackBar allocationBar;
         private Label allocPercent;
         private Button installDriverBtn;
-        private Button RemoveButton;
+        private Button removeButton;
         private Label creditLabel;
     }
 }
