@@ -127,7 +127,7 @@ namespace FastGPU_P
         
         private static List<string> ExecutePowerShell(string scriptContent, Dictionary<string, object>? parameters = null)
         {
-            string tempScript = Path.GetTempFileName() + ".ps1";
+            string tempScript = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ".ps1");
             
             File.WriteAllText(tempScript, scriptContent);
 

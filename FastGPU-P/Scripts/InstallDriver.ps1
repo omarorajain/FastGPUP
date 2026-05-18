@@ -100,6 +100,7 @@ $DriveLetter = [char[]](67..90) | Where-Object { $_ -notin $UsedLetters } | Sele
 Set-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -NewDriveLetter $DriveLetter
 
 # Version Check
+$DriveLetter = $DriveLetter + ":"
 $HostDriver = Get-CimInstance -ClassName Win32_PNPSignedDriver | Where-Object { $_.DeviceName -eq $ActualGPUName } | Select-Object -First 1
 $HostVersion = $HostDriver.DriverVersion
 
