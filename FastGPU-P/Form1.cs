@@ -57,25 +57,23 @@ namespace FastGPU_P
 
         private static string? GetGpuVram(string gpuName)
         {
-            int index = 0;
-            while (true)
+            string baseRegistryKeyPath = @"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+            using RegistryKey? baseKey = Registry.LocalMachine.OpenSubKey(baseRegistryKeyPath);
+
+            if (baseKey == null) return null;
+
+            foreach (string subKeyName in baseKey.GetSubKeyNames())
             {
-                string registryKeyPath = $@"SYSTEM\CurrentControlSet\Control\Class\{{4d36e968-e325-11ce-bfc1-08002be10318}}\{index:D4}";
-                using RegistryKey? key = Registry.LocalMachine.OpenSubKey(registryKeyPath);
+                string subKeyPath = $@"{baseRegistryKeyPath}\{subKeyName}";
+                string? foundName = GetValueFromRegistry(subKeyPath, "DriverDesc");
 
-                if (key == null && index > 0)
-                    return null;
-
-                if (key != null)
+                if (foundName == gpuName)
                 {
-                    string? foundName = GetValueFromRegistry(registryKeyPath, "DriverDesc");
-                    if (foundName == gpuName)
-                    {
-                        return GetValueFromRegistry(registryKeyPath, "HardwareInformation.qwMemorySize");
-                    }
+                    return GetValueFromRegistry(subKeyPath, "HardwareInformation.qwMemorySize");
                 }
-                index++;
             }
+
+            return null;
         }
 
         private static string? GetValueFromRegistry(string registryKeyPath, string valueName)

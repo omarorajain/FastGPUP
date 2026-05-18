@@ -2,13 +2,15 @@ name: Build FastGPU-P Releases
 
 on:
   push:
-    branches: [main]
+    branches: [ '**' ]
+    tags:
+      - 'v*.*.*'
   pull_request:
-    branches: [main]
+    branches: [ '**' ]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -34,5 +36,36 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: FastGPU-P-${{ matrix.build_config }}-${{ matrix.platform }}
+        name: FastGPU-P-${{ matrix.platform }}
         path: ./FastGPU-P/bin/publish/${{ matrix.platform }}-${{ matrix.build_config }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download x86 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: FastGPU-P-x86
+        path: ./FastGPU-P-x86
+
+    - name: Download x64 Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: FastGPU-P-x64
+        path: ./FastGPU-P-x64
+
+    - name: Zip Artifacts for Release
+      run: |
+        cd ./FastGPU-P-x86 && zip -r ../FastGPU-P-x86.zip . && cd ..
+        cd ./FastGPU-P-x64 && zip -r ../FastGPU-P-x64.zip . && cd ..
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          FastGPU-P-x86.zip
+          FastGPU-P-x64.zip
+        generate_release_notes: true
