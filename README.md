@@ -10,13 +10,12 @@ Drivers should be installed automatically when adding a GPU partition, if you up
 
 Windows 10 does not allow GPU selection, this is an Hyper-V limitation.
 
-This tool requires .NET Framework 9.0.
+This tool requires .NET Framework 10.0.
 Make sure Bitlocker is disabled or suspended or the mount will not work. 
 
 ![Image of Main Screen](Images/mainScreen.png)
 
 ## To-do
-- Detect mismatched guest GPU drivers
 - Bulk GPU driver install
 - Install additional addons that are usually needed inside VMs (example: dummy video adapter)
 - Solve issue where app is unable to remove GPU partitions if GPU is no longer installed

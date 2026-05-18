@@ -6,37 +6,32 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+If ($GPUName -eq "Auto") {
+    $PartitionableGPUList = Get-CimInstance -Class Msvm_PartitionableGpu -Namespace root\virtualization\v2 
+    $DevicePathName = $PartitionableGPUList.Name | Select-Object -First 1
+    $GPU = Get-PnpDevice | Where-Object { ($_.DeviceID -like "*$($DevicePathName.Substring(8,16))*") -and ($_.Status -eq "OK") } | Select-Object -First 1
+    $ActualGPUName = $GPU.Friendlyname
+} Else {
+    $ActualGPUName = $GPUName
+}
+
 Function Add-VMGpuPartitionAdapterFiles {
     param(
         [string]$Hostname,
         [string]$DriveLetter,
-        [string]$GPUName
+        [string]$TargetGPUName
     )
 
     If (!($DriveLetter -like "*:*")) {
         $DriveLetter = $DriveLetter + ":"
     }
 
-    If ($GPUName -eq "AUTO") {
-        $PartitionableGPUList = Get-CimInstance -Class Msvm_PartitionableGpu -Namespace root\virtualization\v2 
-        $DevicePathName = $PartitionableGPUList.Name | Select-Object -First 1
-        $GPU = Get-PnpDevice | Where-Object { ($_.DeviceID -like "*$($DevicePathName.Substring(8,16))*") -and ($_.Status -eq "OK") } | Select-Object -First 1
-        $GPUName = $GPU.Friendlyname
-        $GPUServiceName = $GPU.Service 
-    }
-    Else {
-        $GPU = Get-PnpDevice | Where-Object { ($_.Name -eq "$GPUName") -and ($_.Status -eq "OK") } | Select-Object -First 1
-        $GPUServiceName = $GPU.Service
-    }
+    $GPU = Get-PnpDevice | Where-Object { ($_.Name -eq "$TargetGPUName") -and ($_.Status -eq "OK") } | Select-Object -First 1
+    $GPUServiceName = $GPU.Service
     
-    # Get Third Party drivers used, that are not provided by Microsoft and presumably included in the OS
-    Write-Host "INFO   : Finding and copying driver files for $GPUName to VM. This could take a while..."
-
-    $Drivers = Get-CimInstance -ClassName Win32_PNPSignedDriver | Where-Object { $_.DeviceName -eq "$GPUName" }
-
+    $Drivers = Get-CimInstance -ClassName Win32_PNPSignedDriver | Where-Object { $_.DeviceName -eq "$TargetGPUName" }
     New-Item -ItemType Directory -Path "$DriveLetter\windows\system32\HostDriverStore" -Force | Out-Null
     
-    # Copy directory associated with sys file 
     $servicePath = (Get-CimInstance -ClassName Win32_SystemDriver | Where-Object { $_.Name -eq "$GPUServiceName" }).Pathname
     $ServiceDriverDir = $ServicePath.split('\')[0..5] -join ('\')
     $ServiceDriverDest = ("$DriveLetter" + "\" + $($ServicePath.split('\')[1..5] -join ('\'))).Replace("DriverStore", "HostDriverStore")
@@ -45,17 +40,13 @@ Function Add-VMGpuPartitionAdapterFiles {
         Copy-item -path "$ServiceDriverDir" -Destination "$ServiceDriverDest" -Recurse
     }
 
-    # Initialize the list of detected driver packages as an array
-    # $DriverFolders = @()
     foreach ($d in $drivers) {
         $DriverFiles = @()
         $ModifiedDeviceID = $d.DeviceID -replace "\\", "\\"
-        
         $Antecedent = "\\" + $Hostname + "\ROOT\cimv2:Win32_PNPSignedDriver.DeviceID=`"$ModifiedDeviceID`""
         
         $DriverFiles += Get-CimInstance -ClassName Win32_PNPSignedDriverCIMDataFile | Where-Object { $_.Antecedent -eq $Antecedent }
         $DriverName = $d.DeviceName
-        # $DriverID = $d.DeviceID
         
         if ($DriverName -like "NVIDIA*") {
             New-Item -ItemType Directory -Path "$DriveLetter\Windows\System32\drivers\Nvidia Corporation\" -Force | Out-Null
@@ -64,8 +55,6 @@ Function Add-VMGpuPartitionAdapterFiles {
         foreach ($i in $DriverFiles) {
             $path = $i.Dependent.Split("=")[1] -replace '\\\\', '\'
             $path2 = $path.Substring(1, $path.Length - 2)
-            # $InfItem = Get-Item -Path $path2
-            # $Version = $InfItem.VersionInfo.FileVersion
             
             If ($path2 -like "c:\windows\system32\driverstore\*") {
                 $DriverDir = $path2.split('\')[0..5] -join ('\')
@@ -110,8 +99,27 @@ $UsedLetters = Get-CimInstance -ClassName Win32_LogicalDisk | Select-Object -Exp
 $DriveLetter = [char[]](67..90) | Where-Object { $_ -notin $UsedLetters } | Select-Object -First 1
 Set-Partition -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber -NewDriveLetter $DriveLetter
 
-Write-Host "Copying GPU Files - this could take a while..."
-Add-VMGPUPartitionAdapterFiles -Hostname $Hostname -DriveLetter $DriveLetter -GPUName $GPUName
+# Version Check
+$HostDriver = Get-CimInstance -ClassName Win32_PNPSignedDriver | Where-Object { $_.DeviceName -eq $ActualGPUName } | Select-Object -First 1
+$HostVersion = $HostDriver.DriverVersion
+
+$VersionTrackerPath = "$DriveLetter\Windows\System32\HostDriverStore\FastGPUP_Version.txt"
+$GuestVersion = "Unknown"
+
+if (Test-Path $VersionTrackerPath) {
+    $GuestVersion = (Get-Content $VersionTrackerPath).Trim()
+}
+
+if ($HostVersion -eq $GuestVersion) {
+    Write-Host "SKIP_DRIVER_UPDATE"
+    Write-Host "Driver versions match ($HostVersion). Skipping massive file copy."
+} else {
+    Write-Host "Version mismatch (Host: $HostVersion, Guest: $GuestVersion). Copying GPU Files..."
+    Add-VMGPUPartitionAdapterFiles -Hostname $Hostname -DriveLetter $DriveLetter -TargetGPUName $ActualGPUName
+    
+    New-Item -ItemType Directory -Path "$DriveLetter\Windows\System32\HostDriverStore" -Force | Out-Null
+    $HostVersion | Out-File -FilePath $VersionTrackerPath -Encoding UTF8 -Force
+}
 
 Write-Host "Dismounting Drive..."
 Dismount-VHD -Path $VHD.Path

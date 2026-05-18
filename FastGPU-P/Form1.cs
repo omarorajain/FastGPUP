@@ -235,7 +235,9 @@ namespace FastGPU_P
 
                 if (_isWin10)
                 {
-                    gpuBox.Text = "Auto";
+                    gpuBox.Items.Clear();
+                    gpuBox.Items.Add("Auto");
+                    gpuBox.SelectedIndex = 0;
                     gpuBox.Enabled = false;
                 }
                 else
@@ -365,7 +367,7 @@ namespace FastGPU_P
             RunEmbeddedScript("ShutdownVM.ps1", scriptParams);
         }
 
-        private static void InstallDriverCore(string targetVm, string targetGpu, string hostName)
+        private static string InstallDriverCore(string targetVm, string targetGpu, string hostName)
         {
             ShutdownVm(targetVm);
 
@@ -376,7 +378,14 @@ namespace FastGPU_P
                 { "Hostname", hostName }
             };
 
-            RunEmbeddedScript("InstallDriver.ps1", scriptParams);
+            var output = RunEmbeddedScript("InstallDriver.ps1", scriptParams);
+
+            if (output.Any(line => line.Contains("SKIP_DRIVER_UPDATE")))
+            {
+                return "The VM has the exact same GPU driver version as the host. Update Skipped!";
+            }
+
+            return "GPU drivers updated successfully!";
         }
 
         // Button Click Events
@@ -393,6 +402,8 @@ namespace FastGPU_P
 
             try
             {
+                string driverStatus = "";
+
                 await Task.Run(() =>
                 {
                     var stateCheck = ExecutePowerShell($"(Get-VM -Name \"{targetVm}\").State");
@@ -415,7 +426,8 @@ namespace FastGPU_P
                     };
                     
                     RunEmbeddedScript("AllocateGPU.ps1", scriptParams);
-                    InstallDriverCore(targetVm, targetGpu, hostName);
+                    
+                    driverStatus = InstallDriverCore(targetVm, targetGpu, hostName);
 
                     if (wasRunning)
                     {
@@ -423,7 +435,7 @@ namespace FastGPU_P
                     }
                 });
 
-                MessageBox.Show("GPU partition assigned to VM and drivers updated!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show($"GPU partition assigned!\n\n{driverStatus}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -445,12 +457,14 @@ namespace FastGPU_P
 
             try
             {
+                string driverStatus = "";
+                
                 await Task.Run(() =>
                 {
-                    InstallDriverCore(targetVm, targetGpu, hostName);
+                    driverStatus = InstallDriverCore(targetVm, targetGpu, hostName);
                 });
 
-                MessageBox.Show("GPU drivers updated successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(driverStatus, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
