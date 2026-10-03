@@ -184,14 +184,7 @@ namespace FastGPU_P
 
         private void AllocationBar_ValueChanged(object sender, EventArgs e)
         {
-            int snappedValue = (int)(Math.Round(allocationBar.Value / 5.0) * 5);
-
-            if (allocationBar.Value != snappedValue)
-            {
-                allocationBar.Value = snappedValue;
-            }
-
-            allocPercent.Text = $"{snappedValue}%";
+            allocPercent.Text = $"{allocationBar.Value}%";
         }
     }
 }

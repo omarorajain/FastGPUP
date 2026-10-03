@@ -49,4 +49,3 @@ Get-VMNetworkAdapter -VMName "<VM Name>" | Where-Object SwitchName -eq "Moonligh
 - [ ] Bulk GPU driver install
 - [ ] Install additional addons that are usually needed inside VMs (example: dummy video adapter)
 - [ ] Solve issue where app is unable to remove GPU partitions if GPU is no longer installed
-- [ ] Allow precise increment changes on the GPU percentage slider.
